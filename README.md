@@ -102,3 +102,24 @@ Make sure to run the server in `./server` with the command `yarn dev`.
 This will display an embedded `<iframe>` pointed at `https://tetris.com/`.
 It is meant to showcase how you can distribute "plugin" scripts that dynamically add functionality to the widget.
 Make sure to build the plugin in `./plugin` with the command `yarn build`.
+
+## Local development
+
+Need to set up ngrok to test locally.
+
+```sh
+ngrok http 9099
+```
+
+Create a test application on Intercom developer Hub and setup the webhook to point to the ngrok url.
+
+Add the following topics
+
+```
+conversation.admin.assigned
+conversation.admin.closed
+conversation.admin.opened
+conversation.admin.replied
+conversation.user.created
+conversation.user.replied
+```

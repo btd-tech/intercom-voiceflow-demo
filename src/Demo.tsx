@@ -1,9 +1,7 @@
 import 'react-calendar/dist/Calendar.css';
-
 import { Chat, ChatWindow, Launcher, RuntimeAPIProvider, SessionStatus, SystemResponse, TurnType, UserResponse } from '@voiceflow/react-chat';
-import { useContext, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
-
 import { LiveAgentStatus } from './components/LiveAgentStatus.component';
 import { StreamedMessage } from './components/StreamedMessage.component';
 import { RuntimeContext } from './context';
@@ -12,24 +10,30 @@ import { CalendarMessage } from './messages/CalendarMessage.component';
 import { VideoMessage } from './messages/VideoMessage.component';
 import { DemoContainer } from './styled';
 import { useLiveAgent } from './use-live-agent.hook';
+import { Container } from '@mui/material';
+import { ConsentDialog } from './ConsentDialog';
 
-const IMAGE = 'https://picsum.photos/seed/1/200/300';
-const AVATAR = 'https://picsum.photos/seed/1/80/80';
+const IMAGE = 'https://wallpapers.com/images/featured/homer-simpson-pictures-kj3h1n6hzcpwg904.jpg';
+const AVATAR = 'https://wallpapers.com/images/featured/homer-simpson-pictures-kj3h1n6hzcpwg904.jpg';
+const AVATAR2 = 'https://cdn.costumewall.com/wp-content/uploads/2015/09/marge-simpson-tn.webp';
 
 export const Demo: React.FC = () => {
-  const [open, setOpen] = useState(false);
+  const [openLauncher, setOpenLauncher] = useState(false);
+  const ids = useRef<string[]>([]);
 
   const { runtime } = useContext(RuntimeContext)!;
   const liveAgent = useLiveAgent();
+  const [consented, setConsented] = useState<boolean>(false);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
 
   const handleLaunch = async () => {
-    setOpen(true);
-    await runtime.launch();
+    setModalOpen(true);
   };
 
   const handleEnd = () => {
     runtime.setStatus(SessionStatus.ENDED);
-    setOpen(false);
+    setOpenLauncher(false);
+    setModalOpen(false);
   };
 
   const handleSend = (message: string) => {
@@ -40,7 +44,13 @@ export const Demo: React.FC = () => {
     }
   };
 
-  if (!open) {
+  const handleStart = () => {
+    if (!consented) {
+      setModalOpen(true);
+    }
+  };
+
+  if (!openLauncher) {
     return (
       <span
         style={{
@@ -49,57 +59,78 @@ export const Demo: React.FC = () => {
           bottom: '2rem',
         }}
       >
+        <ConsentDialog
+          open={modalOpen}
+          onCancel={async () => handleEnd()}
+          onConfirm={async () => {
+            setModalOpen(false);
+            setConsented(true);
+            setOpenLauncher(true);
+            await runtime.launch();
+          }}
+        />
         <Launcher onClick={handleLaunch} />
       </span>
     );
   }
 
   return (
-    <DemoContainer>
-      <ChatWindow.Container>
-        <RuntimeAPIProvider {...runtime}>
-          <Chat
-            title="My Assistant"
-            description="welcome to my assistant"
-            image={IMAGE}
-            avatar={AVATAR}
-            withWatermark
-            startTime={runtime.session.startTime}
-            hasEnded={runtime.isStatus(SessionStatus.ENDED)}
-            isLoading={!runtime.session.turns.length}
-            onStart={runtime.launch}
-            onEnd={handleEnd}
-            onSend={handleSend}
-            onMinimize={handleEnd}
-          >
-            {liveAgent.isEnabled && <LiveAgentStatus talkToRobot={liveAgent.talkToRobot} />}
-            {runtime.session.turns.map((turn, turnIndex) =>
-              match(turn)
-                .with({ type: TurnType.USER }, ({ id, type: _, ...rest }) => <UserResponse {...rest} key={id} />)
-                .with({ type: TurnType.SYSTEM }, ({ id, type: _, ...rest }) => (
-                  <SystemResponse
-                    {...rest}
-                    key={id}
-                    Message={({ message, ...props }) =>
-                      match(message)
-                        .with({ type: CustomMessage.CALENDAR }, ({ payload: { today } }) => (
-                          <CalendarMessage {...props} value={new Date(today)} runtime={runtime} />
-                        ))
-                        .with({ type: CustomMessage.VIDEO }, ({ payload: url }) => <VideoMessage url={url} />)
-                        .with({ type: CustomMessage.STREAMED_RESPONSE }, ({ payload: { getSocket } }) => <StreamedMessage getSocket={getSocket} />)
-                        .with({ type: CustomMessage.PLUGIN }, ({ payload: { Message } }) => <Message />)
-                        .otherwise(() => <SystemResponse.SystemMessage {...props} message={message} />)
-                    }
-                    avatar={AVATAR}
-                    isLast={turnIndex === runtime.session.turns.length - 1}
-                  />
-                ))
-                .exhaustive()
-            )}
-            {runtime.indicator && <SystemResponse.Indicator avatar={AVATAR} />}
-          </Chat>
-        </RuntimeAPIProvider>
-      </ChatWindow.Container>
-    </DemoContainer>
+    <Container>
+      <DemoContainer>
+        <ChatWindow.Container>
+          <RuntimeAPIProvider {...runtime}>
+            <Chat
+              title="Carpet Muncher"
+              description="I'll munch your carpet"
+              image={IMAGE}
+              avatar={AVATAR}
+              withWatermark
+              startTime={runtime.session.startTime}
+              hasEnded={runtime.isStatus(SessionStatus.ENDED)}
+              isLoading={!runtime.session.turns.length}
+              onStart={handleStart}
+              onEnd={handleEnd}
+              onSend={handleSend}
+              onMinimize={handleEnd}
+            >
+              {liveAgent.isEnabled && <LiveAgentStatus talkToRobot={liveAgent.talkToRobot} />}
+              {runtime.session.turns.map((turn, turnIndex) => {
+                // @ts-ignore
+                const isIntercom = turn.type === 'intercom';
+                if (isIntercom) {
+                  // @ts-ignore
+                  turn.type = 'system';
+                  ids.current.push(turn.id);
+                }
+
+                return match(turn)
+                  .with({ type: TurnType.USER }, ({ id, type: _, ...rest }) => <UserResponse {...rest} key={id} />)
+                  .with({ type: TurnType.SYSTEM }, ({ id, type: _, ...rest }) => (
+                    <SystemResponse
+                      {...rest}
+                      key={id}
+                      Message={({ message, ...props }) =>
+                        match(message)
+                          .with({ type: CustomMessage.CALENDAR }, ({ payload: { today } }) => (
+                            <CalendarMessage {...props} value={new Date(today)} runtime={runtime} />
+                          ))
+                          .with({ type: CustomMessage.VIDEO }, ({ payload: url }) => <VideoMessage url={url} />)
+                          .with({ type: CustomMessage.STREAMED_RESPONSE }, ({ payload: { getSocket } }) => <StreamedMessage getSocket={getSocket} />)
+                          .with({ type: CustomMessage.PLUGIN }, ({ payload: { Message } }) => <Message />)
+                          .otherwise(() => <SystemResponse.SystemMessage {...props} message={message} />)
+                      }
+                      avatar={ids.current.includes(turn.id) ? AVATAR2 : AVATAR}
+                      isLast={turnIndex === runtime.session.turns.length - 1}
+                    />
+                  ))
+                  .exhaustive();
+              })}
+
+              {runtime.indicator && <SystemResponse.Indicator avatar={AVATAR} />}
+            </Chat>
+          </RuntimeAPIProvider>
+        </ChatWindow.Container>
+      </DemoContainer>
+    </Container>
   );
 };

@@ -45,7 +45,7 @@ export const useLiveAgent = () => {
 
   const addSystemMessage = (message: string) =>
     runtime.addTurn({
-      ...createTurn(TurnType.SYSTEM),
+      ...createTurn('intercom'),
       messages: [{ type: 'text', text: message }],
     });
 

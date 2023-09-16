@@ -33,9 +33,9 @@ export const intercomRoutes = (app: Application) => {
     }
   });
 
-  app.head(`/${LiveAgentPlatform.INTERCOM}/webhook`, (_, res) => res.send('ok'));
+  app.head(`/webhook`, (_, res) => res.send('ok'));
 
-  app.post(`/${LiveAgentPlatform.INTERCOM}/webhook`, async (req, res) => {
+  app.post(`/webhook`, async (req, res) => {
     const { topic, data } = req.body;
 
     await match(topic)

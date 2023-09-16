@@ -22,3 +22,5 @@ To enable the intercom integration you need to create a `.env` file and set the 
 ```sh
 INTERCOM_TOKEN='...'
 ```
+
+This is the Access token of the App in intercom

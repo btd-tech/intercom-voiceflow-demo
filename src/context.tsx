@@ -22,8 +22,10 @@ export const RuntimeContext = createContext<RuntimeContextValue | null>(null);
 
 export const RuntimeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const emitter = useMemo(() => createNanoEvents<RuntimeEvents>(), []);
+  const authorization = import.meta.env.VF_DM_API_KEY;
   const runtime = useRuntime({
-    verify: { authorization: import.meta.env.VF_DM_API_KEY },
+    verify: { authorization, projectID: '65058c5f76e8cb0006fd5d54' },
+    versionID: 'development',
     session: { userID: `anonymous-${Math.random()}` },
     traces: [AccountInfoTrace, CalendarTrace, VideoTrace, PluginTrace, TalkToAgentTrace((platform) => emitter.emit('live_agent', platform))],
   });
