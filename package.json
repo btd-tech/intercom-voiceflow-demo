@@ -4,7 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "dev:server": "cd server && npm run dev",
+    "start": "concurrently \"npm run dev*\""
   },
   "prettier": "@voiceflow/prettier-config",
   "dependencies": {
@@ -15,12 +17,14 @@
     "@voiceflow/fetch": "1.5.2",
     "@voiceflow/react-chat": "1.46.1",
     "@voiceflow/slate-serializer": "1.4.2",
+    "concurrently": "^8.2.1",
     "nanoevents": "8.0.0",
     "react": "18.2.0",
     "react-calendar": "4.3.0",
     "react-dom": "18.2.0",
     "styled-components": "6.0.3",
-    "ts-pattern": "4.3.0"
+    "ts-pattern": "4.3.0",
+    "wait-on": "^7.0.1"
   },
   "devDependencies": {
     "@types/node": "20.2.5",
